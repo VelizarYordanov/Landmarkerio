@@ -21,6 +21,7 @@ Route::get('/google-autocomplete', function () {
     return view('googleAutocomplete');
 });
 
+
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
