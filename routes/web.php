@@ -1,18 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
-
 Route::get('/', function () {
     return view('welcome');
 });
@@ -21,6 +9,15 @@ Route::get('/google-autocomplete', function () {
     return view('googleAutocomplete');
 });
 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/get-user-id', [App\Http\Controllers\UserController::class, 'getCurrentUserId']);
+});
+
+Route::post('/favourite-places', [App\Http\Controllers\FavouritePlaceController::class, 'store']);
+
+Route::get('profile', function(){
+    return view('user/profile');
+})->name('profile');
 
 Auth::routes();
 
