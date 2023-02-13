@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -15,9 +16,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::post('/favourite-places', [App\Http\Controllers\FavouritePlaceController::class, 'store']);
 
-Route::get('profile', function(){
-    return view('user/profile');
-})->name('profile');
+Route::get('profile', [App\Http\Controllers\ProfileController::class, 'index'])->name('profile');
 
 Auth::routes();
 

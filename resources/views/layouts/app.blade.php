@@ -60,19 +60,12 @@
                                                      document.getElementById('logout-form').submit();">
                                         {{ __('Logout') }}
                                     </a>
-                                    <a class = "dropdown-item" href="{{ route('profile') }}"
-                                        onclick="event.preventDefault();
-                                            document.getElementById('profile-form').submit();">
-                                        {{__('Profile')}}
-                                    </a>
-
+                                    
                                     <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                                         @csrf
                                     </form>
-                                    <form id="profile-form">
-                                        @csrf
-                                        <input type="hidden" name="user_id" id="user_id" value="{{ auth()->user()->id }}">
-                                    </form>
+
+                                    <a class="dropdown-item" href="{{ route('profile') }}">Profile</a>
                                 </div>
                             </li>
                         @endguest

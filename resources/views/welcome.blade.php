@@ -1,10 +1,9 @@
-@extends('layouts.header')
-<!DOCTYPE html>
+@extends("layouts.header")
 <body>
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
-        <form>
+        <form id="input-form">
           <input id="start" type="text" autocomplete="on" placeholder="Start location"><br>
           <input id="end" type="text" autocomplete="on"><br>
           <button id="submit">Submit</button>
@@ -16,16 +15,18 @@
             height: 400px; 
           }
         </style>
-  <div id="dashboard" style="display: none;">
-  <table>
-    <tr>
-      <th>Name</th>
-      <th>Address</th>
-    </tr>
-    <tbody id="waypoints-table"></tbody>
-  </table>
-  </div>
-  <button id="route-button" style="display: none;">Display Route!</button>
+        <button id="open-map-button" style="display: none;">Open Route in Google Maps!</button>
+        <div id="dashboard" style="display: none;">
+        <table>
+          <tr>
+            <th>Name</th>
+            <th>Address</th>
+          </tr>
+          <tbody id="waypoints-table"></tbody>
+        </table>
+    </div>
+</div>
+</body>
 <script>
 
 var directionsService;
@@ -62,39 +63,69 @@ function initMap(){
     var step = path.length / 10;
     var timeout;
     for (let i = 0, timeout = 0; i < path.length; i += step, timeout++) {
-      promises.push(nearbySearch(service, path[Math.floor(i)], timeout * 200));
+      promises.push(nearbySearch(service, path[Math.floor(i)], timeout * 10));
     }
     Promise.all(promises)
         .then(function(results) { 
+          document.getElementById("input-form").style.display = "none";
             waypoints = [].concat(...results.filter(function(result){
               return result.length > 0;
             }));
             var uniqueWaypoints = filterUniqueWaypoints(waypoints);
             Dashboard(uniqueWaypoints);
-            document.getElementById("route-button").addEventListener("click", function(){
-              document.getElementById('dashboard').style.display = 'none';
-              document.getElementById('route-button').style.display = 'none';
-              updateRoute(start, end, waypointsLocation);
-            })
         });
       };
     });
   });
 };
 
-function updateRoute(start, end, waypointsLocation){
-  directionsService.route({
-    origin: start,
-    destination: end,
-    waypoints: Array.from(waypointsLocation),
-    optimizeWaypoints: true,
-    travelMode: "DRIVING"
-  }, function(response, status) {
-    if (status === "OK") {
-      directionsRenderer.setDirections(response);
-    }
+function updateRoute(start, end, waypointsLocation) {
+  var waypoints = [];
+  
+  waypointsLocation.forEach(function(waypoint) {
+    var latLng = waypoint.location.lat() + "," + waypoint.location.lng();
+    var url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=" + latLng + "&key={{ env('GOOGLE_MAP_KEY') }}";
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        var placeId = data.results[0].place_id;
+        waypoints.push({
+          location: placeId,
+          stopover: true
+        });
+
+        if (waypoints.length === waypointsLocation.length) {
+          directionsService.route({
+            origin: start,
+            destination: end,
+            waypoints: waypoints,
+            optimizeWaypoints: true,
+            travelMode: "DRIVING"
+          }, function(response, status) {
+            if (status === "OK") {
+              directionsRenderer.setDirections(response);
+              var link = document.getElementById("open-map-button");
+              link.style.display = 'block';
+              console.log(waypoints);
+              link.href = "https://www.google.com/maps/dir/?api=1&origin=" + start + "&destination=" + end + "&optimize=true&waypoints=" + waypoints.map(function(waypoint) {
+                return waypoint.location;
+              }).join("|");
+              console.log(link.href);
+              link.innerHTML = "Open in Google Maps";
+              link.target = "_blank";
+              link.addEventListener("click", function() {
+                window.open(link.href, "_blank");
+              });
+            }
+          });
+        }
+      });
   });
 }
+
+
+
 
 
 function nearbySearch(service, location, timeout) {
@@ -103,7 +134,7 @@ function nearbySearch(service, location, timeout) {
       service.nearbySearch({
       location: location,
       radius: 5000,
-      type: ["museum"]
+      type: ["tourist_attraction"]
   }, function(results, status) {
       if (status === "OK") {
           resolve(results);
@@ -129,7 +160,6 @@ function getUserId(callback){
 
 function Dashboard(waypoints) {
   document.getElementById('dashboard').style.display = 'block';
-  document.getElementById('route-button').style.display = 'block';
   var visitedWaypoints = [];
   var table = document.getElementById("waypoints-table");
   waypoints.forEach(function(waypoint) {
@@ -143,10 +173,8 @@ function Dashboard(waypoints) {
 
     var favouriteButton = document.createElement("button");
     var visitButton = document.createElement("button");
-    var routeButton = document.getElementById("route-button");
     favouriteButton.innerHTML = "Add to favourites";
     visitButton.innerHTML = "Visit";
-    routeButton.innerHTML = "Create Route";
 
     var start = document.getElementById("start").value;
     var end = document.getElementById("end").value;
@@ -221,8 +249,3 @@ function filterUniqueWaypoints(waypoints) {
 src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAP_KEY') }}&libraries=places&callback=initMap"
 async defer>
 </script>
-        </div>
-    </div>
-</div>
-</body>
-</html>
