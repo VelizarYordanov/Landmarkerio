@@ -31,7 +31,6 @@
 
 var directionsService;
 var directionsRenderer;
-var waypointsLocation = new Array();
 
 function initMap(){
   directionsService = new google.maps.DirectionsService();
@@ -72,93 +71,14 @@ function initMap(){
               return result.length > 0;
             }));
             var uniqueWaypoints = filterUniqueWaypoints(waypoints);
-            Dashboard(uniqueWaypoints);
+            Dashboard(uniqueWaypoints, map);
         });
       };
     });
   });
 };
 
-function updateRoute(start, end, waypointsLocation) {
-  var waypoints = [];
-  
-  waypointsLocation.forEach(function(waypoint) {
-    var latLng = waypoint.location.lat() + "," + waypoint.location.lng();
-    var url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=" + latLng + "&key={{ env('GOOGLE_MAP_KEY') }}";
-
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        var placeId = data.results[0].place_id;
-        waypoints.push({
-          location: placeId,
-          stopover: true
-        });
-
-        if (waypoints.length === waypointsLocation.length) {
-          directionsService.route({
-            origin: start,
-            destination: end,
-            waypoints: waypoints,
-            optimizeWaypoints: true,
-            travelMode: "DRIVING"
-          }, function(response, status) {
-            if (status === "OK") {
-              directionsRenderer.setDirections(response);
-              var link = document.getElementById("open-map-button");
-              link.style.display = 'block';
-              console.log(waypoints);
-              link.href = "https://www.google.com/maps/dir/?api=1&origin=" + start + "&destination=" + end + "&optimize=true&waypoints=" + waypoints.map(function(waypoint) {
-                return waypoint.location;
-              }).join("|");
-              console.log(link.href);
-              link.innerHTML = "Open in Google Maps";
-              link.target = "_blank";
-              link.addEventListener("click", function() {
-                window.open(link.href, "_blank");
-              });
-            }
-          });
-        }
-      });
-  });
-}
-
-
-
-
-
-function nearbySearch(service, location, timeout) {
-  return new Promise(function(resolve, reject) {
-   setTimeout(function() {
-      service.nearbySearch({
-      location: location,
-      radius: 5000,
-      type: ["tourist_attraction"]
-  }, function(results, status) {
-      if (status === "OK") {
-          resolve(results);
-      }else if(status === "ZERO_RESULTS"){
-        resolve([]);
-      }
-  });
-    }, timeout);
-  });
-}
-
-function getUserId(callback){
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/get-user-id', true);
-  xhr.onreadystatechange = function(){
-    if(xhr.readyState === XMLHttpRequest.DONE && xhr.status == 200){
-      var userID = JSON.parse(xhr.responseText).id;
-      callback(userID);
-    }
-  }
-  xhr.send();
-}
-
-function Dashboard(waypoints) {
+function Dashboard(waypoints, map) {
   document.getElementById('dashboard').style.display = 'block';
   var visitedWaypoints = [];
   var table = document.getElementById("waypoints-table");
@@ -183,14 +103,12 @@ function Dashboard(waypoints) {
       if (visitedWaypoints.length < 7) {
         visitedWaypoints.push(waypoint);
         row.remove();
-        waypointsLocation.push({location: waypoint.geometry.location});
-        updateRoute(start, end, waypointsLocation);
+        updateRoute(start, end, visitedWaypoints, map);
       } else if (visitedWaypoints.length === 7) {
         visitedWaypoints.push(waypoint);
         row.remove();
         document.getElementById("dashboard").style.display = "none";
-        waypointsLocation.push({location: waypoint.geometry.location});
-        updateRoute(start, end, waypointsLocation);
+        updateRoute(start, end, visitedWaypoints, map);
       }
 
     }
@@ -228,6 +146,85 @@ function Dashboard(waypoints) {
     visitCell.appendChild(favouriteButton);
     visitCell.appendChild(visitButton);
   });
+}
+
+function updateRoute(start, end, visitedWaypoints, map) {
+  var waypoints = [];
+  
+  visitedWaypoints.forEach(function(waypoint, index) {
+    var request = {
+      query: waypoint.name
+    };
+    
+    service = new google.maps.places.PlacesService(map);
+    service.textSearch(request, function(results, status) {
+      if (status === google.maps.places.PlacesServiceStatus.OK) {
+        var placeId = results[0].place_id;
+        waypoints.push({
+          location: results[0].geometry.location,
+          stopover: true
+        });
+      }
+      
+      if (index === visitedWaypoints.length - 1) {
+        var request = {
+          origin: start,
+          destination: end,
+          waypoints: waypoints,
+          optimizeWaypoints: true,
+          travelMode: "DRIVING"
+        };
+        console.log(waypoints);
+        
+        directionsService.route(request, function(response, status) {
+          if (status === "OK") {
+            directionsRenderer.setDirections(response);
+            var link = document.getElementById("open-map-button");
+            link.style.display = 'block';
+            link.href = "https://www.google.com/maps/dir/?api=1&origin=" + start + "&destination=" + end + "&waypoints=" + response.routes[0].waypoint_order.map(function(index) {
+              return visitedWaypoints[index].geometry.location;
+            }).join("|");
+            console.log(link.href);
+            link.innerHTML = "Open in Google Maps";
+            link.target = "_blank";
+            link.addEventListener("click", function() {
+              window.open(link.href, "_blank");
+            });
+          }
+        });
+      }
+    });
+  });
+}
+
+function nearbySearch(service, location, timeout) {
+  return new Promise(function(resolve, reject) {
+   setTimeout(function() {
+      service.nearbySearch({
+      location: location,
+      radius: 5000,
+      type: ["museum"]
+  }, function(results, status) {
+      if (status === "OK") {
+          resolve(results);
+      }else if(status === "ZERO_RESULTS"){
+        resolve([]);
+      }
+  });
+    }, timeout);
+  });
+}
+
+function getUserId(callback){
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/get-user-id', true);
+  xhr.onreadystatechange = function(){
+    if(xhr.readyState === XMLHttpRequest.DONE && xhr.status == 200){
+      var userID = JSON.parse(xhr.responseText).id;
+      callback(userID);
+    }
+  }
+  xhr.send();
 }
 
 function filterUniqueWaypoints(waypoints) {

@@ -40,20 +40,24 @@
               </tr>
             </thead>
             <tbody>
-            @foreach ($places as $place)
-                @php
-                $place_details = file_get_contents('https://maps.googleapis.com/maps/api/place/details/json?place_id=' . $place . '&key=' . env('GOOGLE_MAP_KEY'));
-                $place_details = json_decode($place_details);
-                $place_name = $place_details->result->name;
-                $place_address = $place_details->result->formatted_address;
-                $place_image = $place_details->result->photos[0]->photo_reference;
-                @endphp
-                <tr>
-                    <td>{{ $place_name }}</td>
-                    <td>{{ $place_address }}</td>
-                    <td><img src="https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={{ $place_image }}&key={{ env('GOOGLE_MAP_KEY') }}" alt="{{ $place_name }}" class="img-fluid"></td>
-                </tr>
-                @endforeach
+              @foreach ($places as $place)
+              @php
+              $place_details = file_get_contents('https://maps.googleapis.com/maps/api/place/details/json?place_id=' . $place . '&key=' . env('GOOGLE_MAP_KEY'));
+              $place_details = json_decode($place_details);
+              $place_name = $place_details->result->name;
+              $place_address = $place_details->result->formatted_address;
+              $place_image = isset($place_details->result->photos) ? $place_details->result->photos[0]->photo_reference : null;
+              @endphp
+              <tr>
+                  <td>{{ $place_name }}</td>
+                  <td>{{ $place_address }}</td>
+                  @if ($place_image)
+                      <td><img src="https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={{ $place_image }}&key={{ env('GOOGLE_MAP_KEY') }}" alt="{{ $place_name }}" class="img-fluid"></td>
+                  @else
+                      <td>No image available</td>
+                  @endif
+              </tr>
+              @endforeach
             </tbody>
           </table>
         </div>
