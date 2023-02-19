@@ -10,10 +10,6 @@
         <div class="card-body">
           <form>
             <div class="form-group">
-              <label for="profile-picture">Profile Picture:</label>
-              <img src="{{ $user->profile_picture }}" alt="{{ $user->name }}" class="img-fluid">
-            </div>
-            <div class="form-group">
               <label for="username">Username:</label>
               <input type="text" class="form-control" id="username" value="{{ $user->name }}" disabled>
             </div>
@@ -40,9 +36,9 @@
               </tr>
             </thead>
             <tbody>
-              @foreach ($places as $place)
+              @foreach ($places as $id => $place_id)
               @php
-              $place_details = file_get_contents('https://maps.googleapis.com/maps/api/place/details/json?place_id=' . $place . '&key=' . env('GOOGLE_MAP_KEY'));
+              $place_details = file_get_contents('https://maps.googleapis.com/maps/api/place/details/json?place_id=' . $place_id . '&key=' . env('GOOGLE_MAP_KEY'));
               $place_details = json_decode($place_details);
               $place_name = $place_details->result->name;
               $place_address = $place_details->result->formatted_address;
@@ -56,6 +52,13 @@
                   @else
                       <td>No image available</td>
                   @endif
+                  <td>
+                    <form method="POST" action="{{ route('user.places.delete', $id) }}">
+                      @csrf
+                      @method('DELETE')
+                      <button type="submit" class="btn btn-danger">Delete</button>
+                  </form>
+                  </td>
               </tr>
               @endforeach
             </tbody>

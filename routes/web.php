@@ -14,6 +14,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/get-user-id', [App\Http\Controllers\UserController::class, 'getCurrentUserId']);
 });
 
+Route::delete('/user/places/{place_id}', [App\Http\Controllers\UserController::class, 'deletePlace'])->name('user.places.delete');
+
 Route::post('/favourite-places', [App\Http\Controllers\FavouritePlaceController::class, 'store']);
 
 Route::get('profile', [App\Http\Controllers\ProfileController::class, 'index'])->name('profile');
