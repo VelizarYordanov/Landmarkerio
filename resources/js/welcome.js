@@ -17,7 +17,7 @@ function initMap() {
     );
 
     var map = new google.maps.Map(mapContainer, {
-        zoom: 6,
+        zoom: 7.5,
         center: { lat: 42.725, lng: 25.483 },
     });
     directionsRenderer.setMap(map);
@@ -45,11 +45,8 @@ function initMap() {
 
                         let splitPathArray = splitPath(path);
 
-                        // remove last element from array
                         splitPathArray.shift();
                         splitPathArray.pop();
-
-                        console.log(splitPathArray);
 
                         let promises = [];
 
@@ -58,7 +55,6 @@ function initMap() {
                         });
 
                         Promise.all(promises).then(function (results) {
-                            console.log(results);
                             var waypoints = [].concat(
                                 ...results.filter(function (result) {
                                     return result.length > 0;
@@ -75,76 +71,77 @@ function initMap() {
 }
 
 function Dashboard(waypoints, map) {
-    let visitedWaypoints = [];
-    const visitedWaypointsContainer =
-        document.getElementById("selected-waypoints");
+  let visitedWaypoints = [];
+  const visitedWaypointsContainer =
+      document.getElementById("selected-waypoints");
 
-    mapContainer.classList.remove("w-full");
-    mapContainer.classList.add("w-3/5");
-    document.querySelector("#results-container").classList.remove("hidden");
+  mapContainer.classList.remove("w-full");
+  mapContainer.classList.add("w-3/5");
+  document.querySelector("#results-container").classList.remove("hidden");
 
-    waypoints.forEach(function (waypoint) {
-        const buttonsArray = insertWaypoint(waypoint);
+  waypoints.forEach(function (waypoint) {
+      const buttonsArray = insertWaypoint(waypoint);
 
-        const waypointContainer = buttonsArray[0];
-        const visitButton = buttonsArray[1];
-        const favouriteButton = buttonsArray[2];
+      const waypointContainer = buttonsArray[0];
+      const visitButton = buttonsArray[1];
+      const favouriteButton = buttonsArray[2];
 
-        visitButton.onclick = function () {
-            if (visitButton.innerText === "Remove") {
-                visitedWaypoints = visitedWaypoints.filter(function (waypoint) {
-                    return waypoint.place_id !== waypoint.place_id;
-                });
+      visitButton.onclick = function () {
+          if (visitButton.innerText === "Remove") {
+              visitedWaypoints = visitedWaypoints.filter(function (visitedWaypoint) {
+                  return visitedWaypoint.place_id !== waypoint.place_id;
+              });
+              console.log(visitedWaypoints);
+              updateRoute(visitedWaypoints, map);
+              waypointsContainer.appendChild(waypointContainer);
+              visitButton.innerText = "Add to trip";
+              return;
+          }
 
-                updateRoute(visitedWaypoints, map);
-                waypointsContainer.appendChild(waypointContainer);
-                visitButton.innerText = "Add to trip";
-                return;
-            }
+          visitedWaypoints.push(waypoint);
+          updateRoute(visitedWaypoints, map);
+          visitedWaypointsContainer.after(waypointContainer);
+          visitButton.innerText = "Remove";
+      };
 
-            visitedWaypoints.push(waypoint);
-            updateRoute(visitedWaypoints, map);
-            visitedWaypointsContainer.after(waypointContainer);
-            visitButton.innerText = "Remove";
-        };
-
-        favouriteButton.onclick = function () {
-            const csrfToken = document
-                .querySelector('meta[name="csrf-token"]')
-                .getAttribute("content");
-            getUserId((userID) => {
-                fetch("/favourite-places", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": csrfToken,
-                    },
-                    body: JSON.stringify({
-                        user_id: userID,
-                        place_id: waypoint.place_id,
-                    }),
-                })
-                    .then((response) => {
-                        if (response.ok) {
-                            favouriteButton.parentNode.removeChild(
-                                favouriteButton
-                            );
-                            return response.text();
-                        }
-                        throw new Error(
-                            "Request failed with status " + response.status
-                        );
-                    })
-                    .then((data) => {
-                        console.log(data);
-                    })
-                    .catch((error) => {
-                        console.error(error);
-                    });
-            });
-        };
-    });
+      favouriteButton.onclick = function () {
+          const csrfToken = document
+              .querySelector('meta[name="csrf-token"]')
+              .getAttribute("content");
+          getUserId((userID) => {
+              fetch("/favourite-places", {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                      "X-CSRF-TOKEN": csrfToken,
+                  },
+                  body: JSON.stringify({
+                      user_id: userID,
+                      place_id: waypoint.place_id,
+                  }),
+              })
+                  .then((response) => {
+                      if (response.ok) {
+                          favouriteButton.parentNode.removeChild(
+                              favouriteButton
+                          );
+                          return response.text();
+                      }
+                      throw new Error(
+                          "Request failed with status " + response.status
+                      );
+                  })
+                  .then((data) => {
+                      console.log(data);
+                  })
+                  .catch((error) => {
+                      console.error(error);
+                  });
+          });
+      };
+  });
 }
+
 
 function updateRoute(visitedWaypoints, map) {
     var waypoints = [];
@@ -178,7 +175,6 @@ function updateRoute(visitedWaypoints, map) {
                         return visitedWaypoints[index].geometry.location;
                     })
                     .join("|");
-            console.log(link.href);
             link.innerHTML = "Open in Google Maps";
             link.target = "_blank";
             link.addEventListener("click", function () {
