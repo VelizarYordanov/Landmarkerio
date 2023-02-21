@@ -41,6 +41,7 @@ function initMap() {
                         placesService = new google.maps.places.PlacesService(
                             map
                         );
+                        directionsRenderer.setDirections(response)
                         var path = response.routes[0].overview_path;
 
                         let splitPathArray = splitPath(path);
@@ -234,7 +235,7 @@ function filterUniqueWaypoints(waypoints) {
 function loadMapScript() {
     const script = document.createElement("script");
     script.src =
-        "https://maps.googleapis.com/maps/api/js?key=AIzaSyCy_AMtwcEtaGdS7gbqDgIuUwN2UwDkf1k&libraries=places&callback=initMap";
+        "https://maps.googleapis.com/maps/api/js?key=AIzaSyBiF4hRN-HrbNOmmVCUc2p1I00FtrfAbao&libraries=places&callback=initMap";
     script.defer = true;
     script.async = true;
 

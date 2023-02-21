@@ -130,13 +130,13 @@
   
           <button type="submit" class="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">{{ __('Login') }}</button>
   
-          @if (Route::has('password.request'))
+          <!--@if (Route::has('password.request'))
             <div class="mt-4">
               <a class="text-sm text-indigo-600 hover:text-indigo-800" href="{{ route('password.request') }}">
                 {{ __('Forgot Your Password?') }}
               </a>
             </div>
-          @endif
+          @endif!-->
         </form>
       </div>
     </div>

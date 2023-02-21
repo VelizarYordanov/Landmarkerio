@@ -53,7 +53,7 @@
                       <td>No image available</td>
                   @endif
                   <td>
-                    <form method="POST" action="{{ route('user.places.delete', $id) }}">
+                  <form method="POST" action="{{ route('user.places.delete', $id) }}">
                       @csrf
                       @method('DELETE')
                       <button type="submit" class="btn btn-danger">Delete</button>
@@ -71,7 +71,7 @@
 
 
 
-<section class="text-gray-600 body-font flex flex-items-stretch relative">
+<!--<section class="text-gray-600 body-font flex flex-items-stretch relative">
   <div class="container px-5 py-24 h-3/5 mx-auto flex sm:flex-nowrap flex-wrap gap-60">
     <div class="bg-white rounded-lg p-8 flex flex-col w-2/5 mt-10 md:mt-0 relative z-10 shadow-lg">
       <h2 class="text-gray-900 text-lg mb-1 font-medium title-font">Welcome to your profile!</h2>
@@ -88,6 +88,43 @@
       <h2 id="favourite-destinations" class="text-gray-900 text-lg mb-1 font-medium title-font">View your favourite destinations!</h2>
     </div>
   </div>
-</section>
+</section>!-->
 
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="flex justify-between">
+    <h1 class="text-3xl font-bold text-gray-900">{{ $user->name }}</h1>
+    <p class="text-gray-600">{{ $user->email }}</p>
+  </div>
+  <div class="mt-8">
+    <h1 id="favourite-destinations" class="text-gray-900 text-lg mb-1 font-medium title-font">View your favourite destinations!</h1>
+    <div class="h-96 overflow-y-auto">
+      @foreach ($places as $id => $place_id)
+    <div class="bg-white overflow-hidden shadow rounded-lg flex items-center mb-6" style="grid-column: 1 / span 2;">
+      @php
+        $place_details = file_get_contents('https://maps.googleapis.com/maps/api/place/details/json?place_id=' . $place_id . '&key=' . env('GOOGLE_MAP_KEY'));
+        $place_details = json_decode($place_details);
+        $place_name = $place_details->result->name;
+        $place_address = $place_details->result->formatted_address;
+        $place_image = isset($place_details->result->photos) ? $place_details->result->photos[0]->photo_reference : null;
+      @endphp
+      @if($place_image)
+      <img id="image" class="h-48 w-48 object-cover" src="https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={{ $place_image }}&key={{ env('GOOGLE_MAP_KEY') }}" alt="{{ $place_name }}">
+      @else
+      <img id="image" class="h-48 w-48 object-cover" src="https://via.placeholder.com/150" alt="">
+      @endif
+      <div class="flex-grow px-4 py-5 sm:p-6">
+        <h3 id="name" class="text-lg font-medium leading-6 text-gray-900 mb-2">{{ $place_name }}</h3>
+        <p id="address" class="text-sm text-gray-500 mb-2">{{ $place_address }}</p>
+        <form method="POST" action="{{ route('user.places.delete', $id) }}">
+          @csrf
+          @method('DELETE')
+          <button type="submit" class="bg-red-500 text-white py-2 px-4 rounded float-right">Delete</button>
+        </form>
+      </div>
+    </div>
+    @endforeach
+
+    </div>
+  </div>
+</div>
 @endsection
