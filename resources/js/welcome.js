@@ -3,6 +3,9 @@ var directionsRenderer;
 var placesService;
 
 let start, end;
+let visitFavAddress = null;
+const isAuthenticated = document.body.dataset.auth === "true";
+const viewFavouritePlace = document.body.dataset.name;
 const waypointsContainer = document.getElementById("waypoints");
 const mapContainer = document.getElementById("map");
 
@@ -21,6 +24,16 @@ function initMap() {
         center: { lat: 42.725, lng: 25.483 },
     });
     directionsRenderer.setMap(map);
+
+    if (viewFavouritePlace != "null") {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                document.getElementById("start").value =
+                    position.coords.latitude + ", " + position.coords.longitude;
+            });
+        }
+        document.getElementById("end").value = viewFavouritePlace;
+    }
 
     document
         .getElementById("submit")
@@ -41,7 +54,7 @@ function initMap() {
                         placesService = new google.maps.places.PlacesService(
                             map
                         );
-                        directionsRenderer.setDirections(response)
+                        directionsRenderer.setDirections(response);
                         var path = response.routes[0].overview_path;
 
                         let splitPathArray = splitPath(path);
@@ -69,80 +82,105 @@ function initMap() {
                 }
             );
         });
+
+    document
+        .getElementById("current-location")
+        .addEventListener("click", function (event) {
+            event.preventDefault();
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    document.getElementById("start").value =
+                        position.coords.latitude +
+                        ", " +
+                        position.coords.longitude;
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        });
 }
 
 function Dashboard(waypoints, map) {
-  let visitedWaypoints = [];
-  const visitedWaypointsContainer =
-      document.getElementById("selected-waypoints");
+    let visitedWaypoints = [];
+    const visitedWaypointsContainer =
+        document.getElementById("selected-waypoints");
 
-  mapContainer.classList.remove("w-full");
-  mapContainer.classList.add("w-3/5");
-  document.querySelector("#results-container").classList.remove("hidden");
+    mapContainer.classList.remove("w-full");
+    mapContainer.classList.add("w-3/5");
+    document.querySelector("#results-container").classList.remove("hidden");
 
-  waypoints.forEach(function (waypoint) {
-      const buttonsArray = insertWaypoint(waypoint);
+    waypoints.forEach(function (waypoint) {
+        const buttonsArray = insertWaypoint(waypoint);
 
-      const waypointContainer = buttonsArray[0];
-      const visitButton = buttonsArray[1];
-      const favouriteButton = buttonsArray[2];
+        const waypointContainer = buttonsArray[0];
+        const visitButton = buttonsArray[1];
+        let favouriteButton;
+        if (isAuthenticated) {
+            favouriteButton = buttonsArray[2];
+            favouriteButton.onclick = function () {
+                const csrfToken = document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute("content");
+                getUserId((userID) => {
+                    fetch("/favourite-places", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": csrfToken,
+                        },
+                        body: JSON.stringify({
+                            user_id: userID,
+                            place_id: waypoint.place_id,
+                        }),
+                    })
+                        .then((response) => {
+                            if (response.ok) {
+                                favouriteButton.parentNode.removeChild(
+                                    favouriteButton
+                                );
+                                return response.text();
+                            }
+                            throw new Error(
+                                "Request failed with status " + response.status
+                            );
+                        })
+                        .then((data) => {
+                            console.log(data);
+                        })
+                        .catch((error) => {
+                            console.error(error);
+                        });
+                });
+            };
+        }
 
-      visitButton.onclick = function () {
-          if (visitButton.innerText === "Remove") {
-              visitedWaypoints = visitedWaypoints.filter(function (visitedWaypoint) {
-                  return visitedWaypoint.place_id !== waypoint.place_id;
-              });
-              console.log(visitedWaypoints);
-              updateRoute(visitedWaypoints, map);
-              waypointsContainer.appendChild(waypointContainer);
-              visitButton.innerText = "Add to trip";
-              return;
-          }
+        visitButton.onclick = function () {
+            if (visitButton.innerText === "Remove") {
+                visitedWaypoints = visitedWaypoints.filter(function (
+                    visitedWaypoint
+                ) {
+                    return visitedWaypoint.place_id !== waypoint.place_id;
+                });
 
-          visitedWaypoints.push(waypoint);
-          updateRoute(visitedWaypoints, map);
-          visitedWaypointsContainer.after(waypointContainer);
-          visitButton.innerText = "Remove";
-      };
+                console.log(visitedWaypoints);
+                updateRoute(visitedWaypoints, map);
+                waypointsContainer.appendChild(waypointContainer);
+                visitButton.innerText = "Add to trip";
+                return;
+            }
 
-      favouriteButton.onclick = function () {
-          const csrfToken = document
-              .querySelector('meta[name="csrf-token"]')
-              .getAttribute("content");
-          getUserId((userID) => {
-              fetch("/favourite-places", {
-                  method: "POST",
-                  headers: {
-                      "Content-Type": "application/json",
-                      "X-CSRF-TOKEN": csrfToken,
-                  },
-                  body: JSON.stringify({
-                      user_id: userID,
-                      place_id: waypoint.place_id,
-                  }),
-              })
-                  .then((response) => {
-                      if (response.ok) {
-                          favouriteButton.parentNode.removeChild(
-                              favouriteButton
-                          );
-                          return response.text();
-                      }
-                      throw new Error(
-                          "Request failed with status " + response.status
-                      );
-                  })
-                  .then((data) => {
-                      console.log(data);
-                  })
-                  .catch((error) => {
-                      console.error(error);
-                  });
-          });
-      };
-  });
+            visitedWaypoints.push(waypoint);
+            updateRoute(visitedWaypoints, map);
+            visitedWaypointsContainer.after(waypointContainer);
+            console.log(
+                "Waypoint added to visitedWaypointsContainer:",
+                visitedWaypointsContainer
+            );
+
+            visitButton.innerText = "Remove";
+        };
+    });
 }
-
 
 function updateRoute(visitedWaypoints, map) {
     var waypoints = [];
@@ -244,9 +282,6 @@ function loadMapScript() {
 
 window.onload = loadMapScript;
 window.initMap = initMap;
-// Example array of waypoints
-
-// Function to calculate the distance between two points
 function distance(point1, point2) {
     const lat1 = point1.lat();
     const lng1 = point1.lng();
@@ -266,7 +301,6 @@ function distance(point1, point2) {
     return d;
 }
 
-// Function to split the path into 10 equal by distance waypoints
 function splitPath(path) {
     const totalDistance = path
         .slice(1)
@@ -334,9 +368,13 @@ function insertWaypoint(waypoint) {
         "px-4 py-2 mr-1 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700";
     addToTrip.innerText = "Add to trip";
 
-    const heartButton = document.createElement("button");
-    heartButton.className = "text-3xl text-red-500";
-    heartButton.innerHTML = "&hearts;";
+    let heartButton;
+    if (isAuthenticated) {
+        heartButton = document.createElement("button");
+        heartButton.className = "text-3xl text-red-500";
+        heartButton.innerHTML = "&hearts;";
+        ButtonsContainer.appendChild(heartButton);
+    }
 
     NameAddressContainer.appendChild(waypointName);
     NameAddressContainer.appendChild(waypointAddress);
@@ -344,7 +382,6 @@ function insertWaypoint(waypoint) {
     waypointInfoContainer.appendChild(NameAddressContainer);
 
     ButtonsContainer.appendChild(addToTrip);
-    ButtonsContainer.appendChild(heartButton);
 
     waypointInfoContainer.appendChild(ButtonsContainer);
 
@@ -354,5 +391,13 @@ function insertWaypoint(waypoint) {
 
     waypointsContainer.appendChild(waypointContainer);
 
-    return [waypointContainer, addToTrip, heartButton];
+    if (isAuthenticated) {
+        return [waypointContainer, addToTrip, heartButton];
+    } else {
+        return [waypointContainer, addToTrip];
+    }
+}
+
+function visitFav(favName) {
+    console.log(favName);
 }

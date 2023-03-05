@@ -16,7 +16,7 @@
 <body>
     <div id="app">
         <nav class="py-4 px-2 border-b shadow-md">
-            <div class="container-lg flex mx-auto justify-between">
+            <div class="container flex mx-auto justify-between">
                 <a class="text-2xl font-bold text-center items-center self-center" href="{{ url('/') }}">
                     Landmarkerio
                 </a>

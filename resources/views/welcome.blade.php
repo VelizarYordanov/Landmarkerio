@@ -1,16 +1,20 @@
-@extends("layouts.header")
+@extends("layouts.app")
 
 @vite(['resources/js/welcome.js'])
 @section('content')
-<section class="container-lg mx-auto">
+<body data-auth="{{ auth()->check() ? 'true' : 'false' }}">
+<body data-name="<?= isset($_GET["name"]) ? $_GET["name"] : 'null' ?>">
+<section class="container mx-auto">
 	<div class="flex justify-between gap-4 pt-8">
 		<div>
 			<h1 class="text-2xl">Build your perfect trip</h1>
 			<p class="text-gray-500">Plan your trip with our easy to use trip planner</p>
 		</div>
 		<div class="flex gap-3">
-			<input id="start" class="px-4 py-2 border rounded-lg" type="text" placeholder="Start Location">
+			<input id="start" class="px-4 py-2 border rounded-lg" type="text" placeholder="Enter Location">
 			<input id="end" class="px-4 py-2 border rounded-lg"  type="text" placeholder="End Location">
+			
+			<button id="current-location" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500">Use Current Location</button>
 			<button id="submit" class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700">Plan Trip</button>
 		</div>
 	</div>
@@ -27,5 +31,14 @@
 		</div>
 	</div>
 </section>
-
+<div class="bg-grey-100">
+    <div class="container px-2 py-4 mx-auto flex items-center sm:flex-row flex-col">
+      <a class="flex title-font font-medium items-center md:justify-start justify-center text-gray-900">
+        <span class="ml-3 text-xl">Landmarkerio</span>
+      </a>
+      <p class="text-sm text-gray-500 sm:ml-6 sm:mt-0 mt-4">2023 Landmarkerio —
+        <a href="https://github.com/VelizarYordanov" rel="noopener noreferrer" class="text-gray-600 ml-1" target="_blank">@VelizarYordanov</a>
+      </p>
+    </div>
+  </div>
 @endsection
