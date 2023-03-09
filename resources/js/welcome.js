@@ -4,6 +4,7 @@ var placesService;
 
 let start, end;
 let visitFavAddress = null;
+let freeTime;
 const isAuthenticated = document.body.dataset.auth === "true";
 const viewFavouritePlace = document.body.dataset.name;
 const waypointsContainer = document.getElementById("waypoints");
@@ -39,6 +40,7 @@ function initMap() {
         .getElementById("submit")
         .addEventListener("click", function (event) {
             event.preventDefault();
+            getFreeTime();
 
             start = document.getElementById("start").value;
             end = document.getElementById("end").value;
@@ -55,6 +57,28 @@ function initMap() {
                             map
                         );
                         directionsRenderer.setDirections(response);
+
+                        if (freeTime != 0) {
+                            document.getElementById(
+                                "display-freeTime-text"
+                            ).className = "";
+                            var duration = 0;
+                            var legs = response.routes[0].legs;
+                            for (var i = 0; i < legs.length; i++) {
+                                duration += legs[i].duration.value;
+                            }
+                            const displayFreeTime =
+                                document.getElementById("display-freeTime");
+                            duration = Math.floor(duration / 60);
+                            var freeTimeInHours = (freeTime - duration) / 60;
+                            var hours = Math.floor(freeTimeInHours);
+                            var minutes = Math.floor(
+                                (freeTimeInHours - hours) * 60
+                            );
+                            displayFreeTime.innerHTML =
+                                hours + " hours and " + minutes + " minutes";
+                        }
+
                         var path = response.routes[0].overview_path;
 
                         let splitPathArray = splitPath(path);
@@ -162,20 +186,14 @@ function Dashboard(waypoints, map) {
                     return visitedWaypoint.place_id !== waypoint.place_id;
                 });
 
-                console.log(visitedWaypoints);
                 updateRoute(visitedWaypoints, map);
                 waypointsContainer.appendChild(waypointContainer);
                 visitButton.innerText = "Add to trip";
                 return;
             }
-
             visitedWaypoints.push(waypoint);
             updateRoute(visitedWaypoints, map);
             visitedWaypointsContainer.after(waypointContainer);
-            console.log(
-                "Waypoint added to visitedWaypointsContainer:",
-                visitedWaypointsContainer
-            );
 
             visitButton.innerText = "Remove";
         };
@@ -219,6 +237,21 @@ function updateRoute(visitedWaypoints, map) {
             link.addEventListener("click", function () {
                 window.open(link.href, "_blank");
             });
+            if (freeTime != 0) {
+                var duration = 0;
+                var legs = response.routes[0].legs;
+                for (var i = 0; i < legs.length; i++) {
+                    duration += legs[i].duration.value;
+                }
+                const displayFreeTime =
+                    document.getElementById("display-freeTime");
+                duration = Math.floor(duration / 60);
+                var freeTimeInHours = (freeTime - duration) / 60;
+                var hours = Math.floor(freeTimeInHours);
+                var minutes = Math.floor((freeTimeInHours - hours) * 60);
+                displayFreeTime.innerHTML =
+                    hours + " hours and " + minutes + " minutes";
+            }
         }
     });
 }
@@ -398,6 +431,9 @@ function insertWaypoint(waypoint) {
     }
 }
 
-function visitFav(favName) {
-    console.log(favName);
+function getFreeTime() {
+    let freeTimeHours = parseInt(document.getElementById("hours").value) || 0;
+    let freeTimeMinutes =
+        parseInt(document.getElementById("minutes").value) || 0;
+    freeTime = freeTimeHours * 60 + freeTimeMinutes;
 }
