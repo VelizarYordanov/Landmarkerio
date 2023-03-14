@@ -62,6 +62,9 @@ function initMap() {
                             document.getElementById(
                                 "display-freeTime-text"
                             ).className = "";
+                            document.getElementById(
+                                "free-time-info"
+                            ).className = "";
                             var duration = 0;
                             var legs = response.routes[0].legs;
                             for (var i = 0; i < legs.length; i++) {
@@ -202,12 +205,14 @@ function Dashboard(waypoints, map) {
 
 function updateRoute(visitedWaypoints, map) {
     var waypoints = [];
+    var duration = 0;
 
     visitedWaypoints.forEach(function (waypoint) {
         waypoints.push({
             location: waypoint.geometry.location,
             stopover: true,
         });
+        duration += 30 * 60;
     });
     var request = {
         origin: start,
@@ -238,13 +243,13 @@ function updateRoute(visitedWaypoints, map) {
                 window.open(link.href, "_blank");
             });
             if (freeTime != 0) {
-                var duration = 0;
                 var legs = response.routes[0].legs;
                 for (var i = 0; i < legs.length; i++) {
                     duration += legs[i].duration.value;
                 }
                 const displayFreeTime =
                     document.getElementById("display-freeTime");
+                console.log(duration);
                 duration = Math.floor(duration / 60);
                 var freeTimeInHours = (freeTime - duration) / 60;
                 var hours = Math.floor(freeTimeInHours);

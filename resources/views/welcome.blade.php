@@ -35,6 +35,7 @@
 				<h1 id ="display-freeTime-text" class="hidden">Free Time Left: </h1>
 				<h1 id="display-freeTime"></h1>
 			</div>
+			<h2 id="free-time-info" class="hidden text-sm">We have planned a 30 minute visit for each waypoint!</h2>
      		<button id="open-map-button" class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-700">Open in maps</button>
 		</div>
 		<div id="waypoints" class="flex flex-col gap-2">
